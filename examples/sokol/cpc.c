@@ -76,6 +76,8 @@ static void web_boot(void);
 static void web_reset(void);
 static bool web_ready(void);
 static bool web_load(chips_range_t data);
+static bool web_load_file(const char *file);
+static bool web_unload_file();
 static void web_save_snapshot(size_t slot_index);
 static bool web_load_snapshot(size_t slot_index);
 static void web_input(char*);
@@ -222,6 +224,8 @@ void app_init(void) {
                 .reset = web_reset,
                 .ready = web_ready,
                 .load = web_load,
+                .load_file = web_load_file,
+                .unload_file = web_unload_file,
                 .load_snapshot = web_load_snapshot,
                 .save_snapshot = web_save_snapshot,
                 .dbg_connect = web_dbg_connect,
@@ -565,6 +569,16 @@ static bool web_load(chips_range_t data) {
         }
     }
     return loaded;
+}
+
+static bool web_load_file(const char* file) {
+    fs_load_file_async(FS_CHANNEL_IMAGES, file);
+    return true;
+}
+
+static bool web_unload_file() {
+    cpc_remove_disc(&state.cpc);
+    return true;
 }
 
 static void web_save_snapshot(size_t slot_index) {

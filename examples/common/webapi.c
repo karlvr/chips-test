@@ -27,7 +27,7 @@ void webapi_init(const webapi_desc_t* desc) {
         state.funcs.dbg_connect();
     }
 
-    // replace webapi_input() export with a JS shim which takes care of string marshalling
+    // replace exported functions with a JS shim which takes care of string marshalling
     #if defined(__EMSCRIPTEN__)
     EM_ASM({
         const cfunc = Module["_webapi_input"];
@@ -36,6 +36,14 @@ void webapi_init(const webapi_desc_t* desc) {
             Module["_webapi_input"] = nfunc;
         };
         Module["_webapi_input"] = nfunc;
+    });
+    EM_ASM({
+        const cfunc = Module["_webapi_load_file"];
+        const nfunc = (text) => {
+            withStackSave(() => cfunc(stringToUTF8OnStack(text)));
+            Module["_webapi_load_file"] = nfunc;
+        };
+        Module["_webapi_load_file"] = nfunc;
     });
     #endif
 }
@@ -133,6 +141,22 @@ EMSCRIPTEN_KEEPALIVE bool webapi_load(void* ptr, int size) {
         return state.funcs.load((chips_range_t){ .ptr = ptr, .size = (size_t)size });
     }
     return false;
+}
+
+EMSCRIPTEN_KEEPALIVE bool webapi_load_file(char *file) {
+    if (state.funcs.load_file != NULL) {
+        return state.funcs.load_file(file);
+    } else {
+        return false;
+    }
+}
+
+EMSCRIPTEN_KEEPALIVE bool webapi_unload_file() {
+    if (state.funcs.unload_file != NULL) {
+        return state.funcs.unload_file();
+    } else {
+        return false;
+    }
 }
 
 EMSCRIPTEN_KEEPALIVE bool webapi_load_snapshot(size_t index) {
